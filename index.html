@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ultimate 3D Tic Tac Toe</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Poppins',sans-serif;
+}
+
+body{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+    color:white;
+    overflow-x:hidden;
+}
+
+/* Background glow */
+body::before{
+    content:"";
+    position:absolute;
+    width:600px;
+    height:600px;
+    background:radial-gradient(circle,#00f5ff,#ff00c8);
+    filter:blur(180px);
+    animation:float 8s infinite alternate ease-in-out;
+    z-index:0;
+}
+
+@keyframes float{
+    from{transform:translate(-200px,-200px);}
+    to{transform:translate(200px,200px);}
+}
+
+.container{
+    position:relative;
+    z-index:1;
+    text-align:center;
+    margin-top:30px;
+}
+
+h1{
+    font-size:40px;
+    font-weight:800;
+    text-shadow:0 0 20px cyan;
+}
+
+.mode{
+    margin:15px;
+}
+
+select{
+    padding:8px 15px;
+    border-radius:20px;
+    border:none;
+    font-weight:600;
+    cursor:pointer;
+}
+
+.status{
+    margin:15px;
+    font-size:18px;
+    font-weight:600;
+}
+
+/* 3D Board */
+.board{
+    display:grid;
+    grid-template-columns:repeat(3,120px);
+    gap:20px;
+    perspective:1000px;
+    justify-content:center;
+    margin-top:10px;
+}
+
+.cell{
+    width:120px;
+    height:120px;
+    background:rgba(255,255,255,0.1);
+    backdrop-filter:blur(12px);
+    border-radius:20px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:60px;
+    cursor:pointer;
+    transform-style:preserve-3d;
+    transition:all 0.3s ease;
+    box-shadow:0 15px 25px rgba(0,0,0,0.4);
+}
+
+.cell:hover{
+    transform:translateY(-10px) rotateX(15deg);
+    box-shadow:0 25px 35px rgba(0,255,255,0.6);
+}
+
+.cell.win{
+    animation:winGlow 1s infinite alternate;
+}
+
+@keyframes winGlow{
+    from{box-shadow:0 0 20px #00f5ff;}
+    to{box-shadow:0 0 40px #ff00c8;}
+}
+
+button{
+    margin-top:15px;
+    padding:8px 20px;
+    border:none;
+    border-radius:25px;
+    background:linear-gradient(45deg,#00f5ff,#ff00c8);
+    color:white;
+    font-weight:600;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+button:hover{
+    transform:scale(1.1);
+}
+
+/* Scoreboard */
+.scoreboard{
+    margin-top:30px;
+    padding:20px;
+    background:rgba(255,255,255,0.08);
+    backdrop-filter:blur(15px);
+    border-radius:25px;
+    box-shadow:0 0 30px rgba(0,255,255,0.4);
+    width:90%;
+    max-width:900px;
+}
+
+.scoreboard h2{
+    margin-bottom:20px;
+    text-shadow:0 0 15px cyan;
+}
+
+.stats{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:15px;
+}
+
+.card{
+    background:rgba(255,255,255,0.1);
+    padding:15px;
+    border-radius:20px;
+    text-align:center;
+    transition:0.3s;
+}
+
+.card:hover{
+    transform:scale(1.05);
+    box-shadow:0 0 20px #ff00c8;
+}
+
+.card h3{
+    font-size:14px;
+}
+
+.card p{
+    font-size:22px;
+    font-weight:700;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>🎮 Ultimate 3D Tic Tac Toe</h1>
+
+    <div class="mode">
+        Mode:
+        <select id="mode">
+            <option value="pvp">Player vs Player</option>
+            <option value="ai">Player vs AI</option>
+        </select>
+    </div>
+
+    <div class="status">Player X's Turn</div>
+    <div class="board"></div>
+
+    <button onclick="restartGame()">Restart Game</button>
+</div>
+
+<div class="scoreboard">
+    <h2>🏆 Game Statistics</h2>
+
+    <div class="stats">
+        <div class="card">
+            <h3>Player X Wins</h3>
+            <p id="xScore">0</p>
+        </div>
+
+        <div class="card">
+            <h3>Player O Wins</h3>
+            <p id="oScore">0</p>
+        </div>
+
+        <div class="card">
+            <h3>Draws</h3>
+            <p id="drawScore">0</p>
+        </div>
+
+        <div class="card">
+            <h3>Total Matches</h3>
+            <p id="totalMatches">0</p>
+        </div>
+
+        <div class="card">
+            <h3>Current Streak</h3>
+            <p id="streak">None</p>
+        </div>
+
+        <div class="card">
+            <h3>Mode</h3>
+            <p id="currentMode">Player vs Player</p>
+        </div>
+    </div>
+
+    <button onclick="resetScoreboard()">Reset Scoreboard</button>
+</div>
+
+<script>
+const board = document.querySelector(".board");
+const statusText = document.querySelector(".status");
+const modeSelect = document.getElementById("mode");
+
+let currentPlayer="X";
+let gameState=Array(9).fill("");
+let gameActive=true;
+
+let xScore=Number(localStorage.getItem("xScore"))||0;
+let oScore=Number(localStorage.getItem("oScore"))||0;
+let drawScore=Number(localStorage.getItem("drawScore"))||0;
+let totalMatches=Number(localStorage.getItem("totalMatches"))||0;
+let streak=localStorage.getItem("streak")||"None";
+
+updateScoreUI();
+
+const winConditions=[
+[0,1,2],[3,4,5],[6,7,8],
+[0,3,6],[1,4,7],[2,5,8],
+[0,4,8],[2,4,6]
+];
+
+function createBoard(){
+    board.innerHTML="";
+    gameState.forEach((_,i)=>{
+        const cell=document.createElement("div");
+        cell.classList.add("cell");
+        cell.dataset.index=i;
+        cell.addEventListener("click",handleClick);
+        board.appendChild(cell);
+    });
+}
+
+function handleClick(e){
+    const index=e.target.dataset.index;
+    if(gameState[index]!==""||!gameActive) return;
+
+    makeMove(index,currentPlayer);
+
+    if(modeSelect.value==="ai" && gameActive && currentPlayer==="O"){
+        setTimeout(aiMove,400);
+    }
+}
+
+function makeMove(index,player){
+    gameState[index]=player;
+    board.children[index].innerText=player;
+    checkWinner();
+}
+
+function checkWinner(){
+    for(let condition of winConditions){
+        const [a,b,c]=condition;
+        if(gameState[a] &&
+           gameState[a]===gameState[b] &&
+           gameState[a]===gameState[c]){
+
+            condition.forEach(i=>board.children[i].classList.add("win"));
+
+            totalMatches++;
+
+            if(currentPlayer==="X"){
+                xScore++;
+                streak="Player X 🔥";
+            }else{
+                oScore++;
+                streak="Player O 🔥";
+            }
+
+            saveScores();
+            updateScoreUI();
+
+            statusText.innerText=`🎉 Player ${currentPlayer} Wins!`;
+            gameActive=false;
+            return;
+        }
+    }
+
+    if(!gameState.includes("")){
+        drawScore++;
+        totalMatches++;
+        streak="Draw 🤝";
+
+        saveScores();
+        updateScoreUI();
+
+        statusText.innerText="It's a Draw!";
+        gameActive=false;
+        return;
+    }
+
+    currentPlayer=currentPlayer==="X"?"O":"X";
+    statusText.innerText=`Player ${currentPlayer}'s Turn`;
+}
+
+function aiMove(){
+    let bestScore=-Infinity;
+    let move;
+    for(let i=0;i<9;i++){
+        if(gameState[i]===""){
+            gameState[i]="O";
+            let score=minimax(gameState,0,false);
+            gameState[i]="";
+            if(score>bestScore){
+                bestScore=score;
+                move=i;
+            }
+        }
+    }
+    makeMove(move,"O");
+}
+
+function minimax(boardState,depth,isMax){
+    if(checkResult("O",boardState)) return 10-depth;
+    if(checkResult("X",boardState)) return depth-10;
+    if(!boardState.includes("")) return 0;
+
+    if(isMax){
+        let best=-Infinity;
+        for(let i=0;i<9;i++){
+            if(boardState[i]===""){
+                boardState[i]="O";
+                best=Math.max(best,minimax(boardState,depth+1,false));
+                boardState[i]="";
+            }
+        }
+        return best;
+    }else{
+        let best=Infinity;
+        for(let i=0;i<9;i++){
+            if(boardState[i]===""){
+                boardState[i]="X";
+                best=Math.min(best,minimax(boardState,depth+1,true));
+                boardState[i]="";
+            }
+        }
+        return best;
+    }
+}
+
+function checkResult(player,state){
+    return winConditions.some(([a,b,c]) =>
+        state[a]===player && state[b]===player && state[c]===player
+    );
+}
+
+function restartGame(){
+    gameState=Array(9).fill("");
+    gameActive=true;
+    currentPlayer="X";
+    statusText.innerText="Player X's Turn";
+    createBoard();
+}
+
+function saveScores(){
+    localStorage.setItem("xScore",xScore);
+    localStorage.setItem("oScore",oScore);
+    localStorage.setItem("drawScore",drawScore);
+    localStorage.setItem("totalMatches",totalMatches);
+    localStorage.setItem("streak",streak);
+}
+
+function updateScoreUI(){
+    document.getElementById("xScore").innerText=xScore;
+    document.getElementById("oScore").innerText=oScore;
+    document.getElementById("drawScore").innerText=drawScore;
+    document.getElementById("totalMatches").innerText=totalMatches;
+    document.getElementById("streak").innerText=streak;
+    document.getElementById("currentMode").innerText=
+        modeSelect.value==="ai"?"Player vs AI":"Player vs Player";
+}
+
+modeSelect.addEventListener("change",updateScoreUI);
+
+function resetScoreboard(){
+    localStorage.clear();
+    xScore=oScore=drawScore=totalMatches=0;
+    streak="None";
+    updateScoreUI();
+}
+
+createBoard();
+</script>
+
+</body>
+</html>
